@@ -1,1 +1,23 @@
-.idea
+# Build outputs
+build/
+build-wasm/
+dist/
+out/
+
+# WASM artifacts are generated into frontend/wasm by deploy workflow
+frontend/wasm/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Regenerate canonical data via tools/normalize_dataset.py — see data/CREDITS.md
+/daily_forex_rates.csv
+data/*.zip
+data/raw_*
+
+# Logs / temp
+*.log
+tmp/
