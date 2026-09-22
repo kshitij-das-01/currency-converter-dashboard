@@ -9,26 +9,29 @@ Covers PRD FR-C1–FR-C8 · Milestone M1 · Estimated Days 2–4.
 ```cmake
 # CMakeLists.txt (repo root)
 cmake_minimum_required(VERSION 3.16)
-project(currency_dashboard VERSION 0.1.0 LANGUAGES CXX)
+project(currency-converter-dashboard LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-option(BUILD_SERVER "Build native HTTP server" ON)
+option(BUILD_SERVER "Build the native HTTP server (cpp‑httplib)" ON)
+option(BUILD_WASM   "Build the WebAssembly (Emscripten) target" OFF)
 option(BUILD_TESTS  "Build unit tests" ON)
 
 add_subdirectory(core)
-if(BUILD_SERVER AND NOT EMSCRIPTEN)
-  add_subdirectory(server)
+
+if (BUILD_SERVER AND NOT BUILD_WASM)
+    add_subdirectory(server)
 endif()
-if(EMSCRIPTEN)
-  add_subdirectory(wasm)
-endif()
-if(BUILD_TESTS AND NOT EMSCRIPTEN)
-  enable_testing()
-  add_subdirectory(core/tests)
+
+if (BUILD_WASM)
+    add_subdirectory(wasm)
 endif()
 ```
+
+> **CLion tip:** Create two CMake profiles:
+> - **Native‑Release**: default toolchain, leave `BUILD_WASM=OFF` (or unset).
+> - **WASM‑Release**: select the Emscripten toolchain (clear the C/C++ compiler fields, point to `<emsdk>/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake`), set `-DBUILD_WASM=ON`.
+> Reload CMake after switching profiles and build (`Ctrl+F9`).
+
+`core/CMakeLists.txt`:
 
 `core/CMakeLists.txt`:
 

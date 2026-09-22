@@ -57,7 +57,7 @@ currency-converter-dashboard/
 └── scripts/verify_dataset.py               # gate — must print ALL CHECKS PASSED
 ```
 
-> **Existing skeleton note:** `core/src/csv_parser.cpp` is currently empty (0 bytes) and
+> **Existing skeleton note:** `../../core/src` is currently empty (0 bytes) and
 > `core/CMakeLists.txt` references `src/state_engine.cpp` (typo). This doc corrects the CMake to
 > `src/stats_engine.cpp` and fills every source.
 
@@ -66,33 +66,31 @@ currency-converter-dashboard/
 ## 1.1 Top-Level `CMakeLists.txt` (repo root)
 
 No change from doc 03 §3.0 — reproduced for completeness. Place at repo root (`/CMakeLists.txt`):
-
 ```cmake
 # CMakeLists.txt (repo root)
 cmake_minimum_required(VERSION 3.16)
-project(currency_dashboard VERSION 0.1.0 LANGUAGES CXX)
+project(currency-converter-dashboard LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-option(BUILD_SERVER "Build native HTTP server" ON)
+option(BUILD_SERVER "Build the native HTTP server (cpp‑httplib)" ON)
+option(BUILD_WASM   "Build the WebAssembly (Emscripten) target" OFF)
 option(BUILD_TESTS  "Build unit tests" ON)
 
 add_subdirectory(core)
-if(BUILD_SERVER AND NOT EMSCRIPTEN)
-  add_subdirectory(server)
+
+if (BUILD_SERVER AND NOT BUILD_WASM)
+    add_subdirectory(server)
 endif()
-if(EMSCRIPTEN)
-  add_subdirectory(wasm)
-endif()
-if(BUILD_TESTS AND NOT EMSCRIPTEN)
-  enable_testing()
-  add_subdirectory(core/tests)
+
+if (BUILD_WASM)
+    add_subdirectory(wasm)
 endif()
 ```
+> **CLion tip:** Create two CMake profiles:
+> - **Native‑Release**: default toolchain, leave `BUILD_WASM=OFF` (or unset), and `-DBUILD_SERVER=ON` (default).
+> - **WASM‑Release**: select the Emscripten toolchain (clear the C/C++ compiler fields, point to `<emsdk>/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake`), set `-DBUILD_WASM=ON` and `-DBUILD_SERVER=OFF` (since server and WASM are mutually exclusive).
+> Reload CMake after switching profiles and build (`Ctrl+F9`).
 
 ---
-
 ## 1.2 `core/CMakeLists.txt`
 
 **Replace the current file** (`state_engine.cpp` → `stats_engine.cpp` + add `rate_engine.cpp`):
@@ -205,7 +203,7 @@ ParseResult parseCsvText(const std::string& text);
 } // namespace ccd
 ```
 
-### 3.2 `core/src/csv_parser.cpp` — Full Implementation
+### 3.2 `../../core/src` — Full Implementation
 
 > ~190 lines. Handles: `\n` + `\r\n` + lone `\r`, quoted cells with `""` escapes, blank cells as *normal*
 > (no point recorded), exponent tokens (`1.5082909e-05` for BTC), `YYYY-MM-DD` plus `YYYY/MM/DD` and
@@ -495,7 +493,7 @@ private:
 } // namespace ccd
 ```
 
-### 4.2 `core/src/rate_engine.cpp` — Full Implementation
+### 4.2 `../../core/src` — Full Implementation
 
 ```cpp
 // core/src/rate_engine.cpp
@@ -531,7 +529,7 @@ const std::pair<std::string, double>* lastLe(
 } // anonymous namespace
 
 Error RateEngine::lookup(const std::string& cur, const std::string& date,
-                         double& outVal, std::string& outActualDate) const
+                        double& outVal, std::string& outActualDate) const
 {
     auto it = data_.series.find(cur);
     if (it == data_.series.end())
@@ -652,7 +650,7 @@ movingAverage(const std::vector<std::pair<std::string, double>>& pts,
 } // namespace ccd
 ```
 
-### 5.2 `core/src/stats_engine.cpp` — Full Implementation
+### 5.2 `../../core/src` — Full Implementation
 
 ```cpp
 // core/src/stats_engine.cpp
@@ -1180,8 +1178,6 @@ Tuning hint (only if exceeded): `series.reserve(rowsTotal)`-style reservations a
 
 ### 7.2 `core/tests/parity_seeds.cpp` — Golden JSON for Doc 05
 
-Generates `scripts/fixtures/parity_seeds.json` (20 tuples) consumed by doc 05's `parity_test.mjs` to compare WASM vs REST.
-
 ```cpp
 // core/tests/parity_seeds.cpp — run manually, not in ctest
 // Usage: ./build/core/tests/parity_seeds [inCsv] [outJson]
@@ -1354,7 +1350,7 @@ Copy into PR description and check off:
 - [ ] `cmake -S . -B build && cmake --build build` — zero warnings with `-Wall -Wextra -Wpedantic`
 - [ ] `ctest --test-dir build --output-on-failure` — all 3 suites green (26 cases)
 - [ ] `core/tests/third_party/doctest.h` vendored and committed (v2.4.12)
-- [ ] `core/src/csv_parser.cpp` handles blank cells, `\r\n`, quotes, exponents, date normalization, defensive sort
+- [ ] `../../core/src` handles blank cells, `\r\n`, quotes, exponents, date normalization, defensive sort
 - [ ] `RateEngine` uses `upper_bound` binary search; `from==to` → 1.0; validation order `UnknownCurrency → InvalidAmount → InvalidDate`
 - [ ] `StatsResult` uses population stddev; `movingAverage` is `O(N)` running sum
 - [ ] `bench_csv_parser data/exchange_rates.csv` — elapsed < 800 ms, skipped rows < 1%
